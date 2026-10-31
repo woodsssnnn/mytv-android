@@ -41,7 +41,6 @@ import top.yogiczy.mytv.ui.screens.leanback.quickpanel.LeanbackQuickPanelScreen
 import top.yogiczy.mytv.ui.screens.leanback.settings.LeanbackSettingsScreen
 import top.yogiczy.mytv.ui.screens.leanback.settings.LeanbackSettingsViewModel
 import top.yogiczy.mytv.ui.screens.leanback.toast.LeanbackToastState
-import top.yogiczy.mytv.ui.screens.leanback.update.LeanbackUpdateScreen
 import top.yogiczy.mytv.ui.screens.leanback.video.LeanbackVideoScreen
 import top.yogiczy.mytv.ui.screens.leanback.video.rememberLeanbackVideoPlayerState
 import top.yogiczy.mytv.ui.utils.SP
@@ -142,14 +141,25 @@ fun LeanbackMainContent(
                         }
                     },
                     onSelect = { mainContentState.isPanelVisible = true },
-                    onLongSelect = { mainContentState.isQuickPanelVisible = true },
-                    onSettings = { mainContentState.isQuickPanelVisible = true },
+                    onLongSelect = {
+                        // 长辈模式：长按OK不进快捷面板（内有换源/设置入口），改开频道列表
+                        if (settingsViewModel.appElderMode) mainContentState.isPanelVisible = true
+                        else mainContentState.isQuickPanelVisible = true
+                    },
+                    onSettings = {
+                        // 长辈模式：菜单键同样只开频道列表，屏蔽快捷面板
+                        if (settingsViewModel.appElderMode) mainContentState.isPanelVisible = true
+                        else mainContentState.isQuickPanelVisible = true
+                    },
                     onNumber = {
                         if (settingsViewModel.iptvChannelNoSelectEnable) {
                             panelChannelNoSelectState.input(it)
                         }
                     },
-                    onLongDown = { mainContentState.isQuickPanelVisible = true },
+                    onLongDown = {
+                        if (settingsViewModel.appElderMode) mainContentState.isPanelVisible = true
+                        else mainContentState.isQuickPanelVisible = true
+                    },
                 )
                 .handleLeanbackDragGestures(
                     onSwipeDown = {
@@ -312,8 +322,6 @@ fun LeanbackMainContent(
         LeanbackVisible({ settingsViewModel.debugShowFps }) {
             LeanbackMonitorScreen()
         }
-
-        LeanbackUpdateScreen()
     }
 }
 

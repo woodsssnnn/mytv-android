@@ -24,6 +24,9 @@ object SP {
         /** 开机自启 */
         APP_BOOT_LAUNCH,
 
+        /** 长辈模式 */
+        APP_ELDER_MODE,
+
         /** 上一次最新版本 */
         APP_LAST_LATEST_VERSION,
 
@@ -121,8 +124,13 @@ object SP {
     /** ==================== 应用 ==================== */
     /** 开机自启 */
     var appBootLaunch: Boolean
-        get() = sp.getBoolean(KEY.APP_BOOT_LAUNCH.name, false)
+        get() = sp.getBoolean(KEY.APP_BOOT_LAUNCH.name, true)
         set(value) = sp.edit().putBoolean(KEY.APP_BOOT_LAUNCH.name, value).apply()
+
+    /** 长辈模式：屏蔽设置类入口，仅网页面板可关闭 */
+    var appElderMode: Boolean
+        get() = sp.getBoolean(KEY.APP_ELDER_MODE.name, true)
+        set(value) = sp.edit().putBoolean(KEY.APP_ELDER_MODE.name, value).apply()
 
     /** 上一次最新版本 */
     var appLastLatestVersion: String
@@ -232,7 +240,7 @@ object SP {
 
     /** 使用经典选台界面 */
     var uiUseClassicPanelScreen: Boolean
-        get() = sp.getBoolean(KEY.UI_USE_CLASSIC_PANEL_SCREEN.name, false)
+        get() = sp.getBoolean(KEY.UI_USE_CLASSIC_PANEL_SCREEN.name, true)
         set(value) = sp.edit().putBoolean(KEY.UI_USE_CLASSIC_PANEL_SCREEN.name, value).apply()
 
     /** 界面密度缩放比例 */
@@ -242,7 +250,7 @@ object SP {
 
     /** 界面字体缩放比例 */
     var uiFontScaleRatio: Float
-        get() = sp.getFloat(KEY.UI_FONT_SCALE_RATIO.name, 1f)
+        get() = sp.getFloat(KEY.UI_FONT_SCALE_RATIO.name, 1.15f)
         set(value) = sp.edit().putFloat(KEY.UI_FONT_SCALE_RATIO.name, value).apply()
 
     /** 时间显示模式 */

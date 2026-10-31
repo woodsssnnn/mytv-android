@@ -1,15 +1,18 @@
 package top.yogiczy.mytv.data.repositories.iptv
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import top.yogiczy.mytv.AppGlobal
 import top.yogiczy.mytv.data.entities.Iptv
 import top.yogiczy.mytv.data.entities.IptvGroup
 import top.yogiczy.mytv.data.entities.IptvGroupList
 import top.yogiczy.mytv.data.entities.IptvList
 import top.yogiczy.mytv.data.repositories.FileCacheRepository
 import top.yogiczy.mytv.data.repositories.iptv.parser.IptvParser
+import top.yogiczy.mytv.ui.utils.SP
 import top.yogiczy.mytv.utils.Logger
 
 /**
@@ -23,6 +26,13 @@ class IptvRepository : FileCacheRepository("iptv.txt") {
      */
     private suspend fun fetchSource(sourceUrl: String) = withContext(Dispatchers.IO) {
         log.d("获取远程直播源: $sourceUrl")
+
+        // asset:// 协议：读取 APK 内置的精选频道源（零网络依赖，开机即用）
+        if (sourceUrl.startsWith("asset://")) {
+            val assetPath = sourceUrl.removePrefix("asset://")
+            val context: Context = AppGlobal.context
+            return@withContext context.assets.open(assetPath).bufferedReader().use { it.readText() }
+        }
 
         val client = OkHttpClient()
         val request = Request.Builder().url(sourceUrl).build()

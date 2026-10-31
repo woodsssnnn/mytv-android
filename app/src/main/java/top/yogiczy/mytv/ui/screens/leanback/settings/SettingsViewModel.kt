@@ -18,6 +18,14 @@ class LeanbackSettingsViewModel : ViewModel() {
             SP.appBootLaunch = value
         }
 
+    private var _appElderMode by mutableStateOf(SP.appElderMode)
+    var appElderMode: Boolean
+        get() = _appElderMode
+        set(value) {
+            _appElderMode = value
+            SP.appElderMode = value
+        }
+
     private var _appLastLatestVersion by mutableStateOf(SP.appLastLatestVersion)
     var appLastLatestVersion: String
         get() = _appLastLatestVersion

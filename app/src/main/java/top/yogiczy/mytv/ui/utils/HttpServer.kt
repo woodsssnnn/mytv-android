@@ -112,6 +112,7 @@ object HttpServer : Loggable() {
                         iptvSourceUrl = SP.iptvSourceUrl,
                         epgXmlUrl = SP.epgXmlUrl,
                         videoPlayerUserAgent = SP.videoPlayerUserAgent,
+                        appElderMode = SP.appElderMode,
                         logHistory = Logger.history,
                     )
                 )
@@ -127,9 +128,13 @@ object HttpServer : Loggable() {
         val iptvSourceUrl = body.get("iptvSourceUrl").toString()
         val epgXmlUrl = body.get("epgXmlUrl").toString()
         val videoPlayerUserAgent = body.get("videoPlayerUserAgent").toString()
+        val appElderMode = body.get("appElderMode")?.toString()?.toBooleanStrictOrNull()
+            ?: SP.appElderMode
 
         if (SP.iptvSourceUrl != iptvSourceUrl) {
-            SP.iptvSourceUrl = iptvSourceUrl
+            // 网页端清空源地址 = 恢复内置精选源，而不是失效占位地址
+            SP.iptvSourceUrl = if (iptvSourceUrl.isBlank()) Constants.IPTV_SOURCE_URL
+            else iptvSourceUrl
             IptvRepository().clearCache()
         }
 
@@ -139,6 +144,7 @@ object HttpServer : Loggable() {
         }
 
         SP.videoPlayerUserAgent = videoPlayerUserAgent
+        SP.appElderMode = appElderMode
 
         wrapResponse(response).send("success")
     }
@@ -206,6 +212,7 @@ private data class AllSettings(
     val iptvSourceUrl: String,
     val epgXmlUrl: String,
     val videoPlayerUserAgent: String,
+    val appElderMode: Boolean,
 
     val logHistory: List<Logger.HistoryItem>,
 )

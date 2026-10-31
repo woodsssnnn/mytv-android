@@ -49,6 +49,18 @@
                         </van-cell>
                     </van-cell-group>
 
+                    <van-cell-group inset title="长辈模式">
+                        <van-cell title="长辈模式" center>
+                            <template #label>
+                                开启后电视端仅能换台和选台，设置入口全部隐藏；关闭即恢复完整功能
+                            </template>
+                            <template #extra>
+                                <van-switch v-model="settings.appElderMode" size="22px"
+                                    @change="confirmSettings()"></van-switch>
+                            </template>
+                        </van-cell>
+                    </van-cell-group>
+
                     <van-cell-group inset title="节目单">
                         <van-cell title="自定义节目单">
                             <template #label>
