@@ -82,8 +82,13 @@ class LeanbackMainContentState(
         }
 
         videoPlayerState.onError {
-            if (_currentIptvUrlIdx < _currentIptv.urlList.size - 1) {
-                changeCurrentIptv(_currentIptv, _currentIptvUrlIdx + 1)
+            // 适老改造：线路列表环形重试——全部线路失败后回到第1条继续，
+            // 永不停机（配合「可播放域名记忆」，通常第二轮就恢复）
+            if (_currentIptv.urlList.isNotEmpty()) {
+                changeCurrentIptv(
+                    _currentIptv,
+                    (_currentIptvUrlIdx + 1) % _currentIptv.urlList.size,
+                )
             }
 
             // 从记忆中删除不可播放的域名
@@ -91,6 +96,7 @@ class LeanbackMainContentState(
         }
 
         videoPlayerState.onCutoff {
+            // 断流优先重连当前线路；连续失败会自然滑向环形换线路
             changeCurrentIptv(_currentIptv, _currentIptvUrlIdx)
         }
     }

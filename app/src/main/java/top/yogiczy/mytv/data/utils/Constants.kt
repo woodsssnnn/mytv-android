@@ -67,9 +67,9 @@ object Constants {
     const val LOG_HISTORY_MAX_SIZE = 50
 
     /**
-     * 播放器加载超时
+     * 播放器加载超时（适老化：快速失败换线路，环形重试不停机）
      */
-    const val VIDEO_PLAYER_LOAD_TIMEOUT = 1000L * 15 // 15秒
+    const val VIDEO_PLAYER_LOAD_TIMEOUT = 1000L * 8 // 8秒
 
     /**
      * 界面 超时未操作自动关闭界面
