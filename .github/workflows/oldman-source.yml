@@ -38,6 +38,32 @@ jobs:
       - name: probe
         run: |
           sed 's/\t/|/' _work/candidates.tsv | xargs -P 20 -I{} bash -c 'I="{}"; n="${I%%|*}"; u="${I#*|}"; read -r c l < <(curl -o /dev/null -s -L -m 9 --connect-timeout 5 -r 0-2047 -w "%{http_code} %{time_total}" "$u" 2>/dev/null || echo "ERR 99"); echo -e "$c\t$l\t$n\t$u"' > _work/probe.tsv || true
+      - name: identity check (experimental, content consistency)
+        run: |
+          awk -F'\t' '$1>=200 && $1<400 {print $3"\t"$4}' _work/probe.tsv | sort -u > _work/alive.tsv
+          sudo apt-get -y install ffmpeg tesseract-ocr >/dev/null 2>&1 || true
+          # 台标模板哈希: runner 可达 fanmingming 台标库, 抓模板图与流帧同法哈希
+          TPL_HASHES=$(python - <<'EOF'
+          import urllib.request, io, sys, hashlib
+          sys.path.insert(0, 'scripts')
+          try:
+              from verify_identity import dhash
+              from PIL import Image
+              outs = []
+              for name in ['CCTV1','CCTV2','CCTV13','CCTV14','湖南卫视','东方卫视']:
+                  try:
+                      d = urllib.request.urlopen(f'https://live.fanmingming.com/tv/{name}.png', timeout=8).read()
+                      im = Image.open(io.BytesIO(d)).convert('RGBA')
+                      bg = Image.new('RGBA', im.size, (0,0,0,255)); bg.alpha_composite(im)
+                      outs.append(f'{name}:{dhash(bg.convert("RGB"))}')
+                  except Exception: pass
+              print(','.join(outs))
+          except Exception: print('')
+          EOF
+          )
+          export TPL_HASHES
+          cat _work/alive.tsv | python scripts/verify_identity.py > _work/identity.tsv || true
+          echo "identity: ok=$(grep -c '	ok$' _work/identity.tsv 2>/dev/null || echo 0) mismatch=$(grep -c '	mismatch' _work/identity.tsv 2>/dev/null || echo 0)"
       - name: build
         run: |
           PROBE_FILE=_work/probe.tsv python scripts/build_source.py < _work/candidates.tsv > live/old-man-tv.m3u
