@@ -66,6 +66,14 @@ class LeanbackMainContentState(
     private var _isCatchupPlayback by mutableStateOf(false)
     val isCatchupPlayback get() = _isCatchupPlayback
 
+    /** 长辈首页：长辈模式下开机显示四大卡片（直播在背后继续播） */
+    private var _isHomeVisible by mutableStateOf(SP.appElderMode)
+    var isHomeVisible
+        get() = _isHomeVisible
+        set(value) {
+            _isHomeVisible = value
+        }
+
     private var _isQuickPanelVisible by mutableStateOf(false)
     var isQuickPanelVisible
         get() = _isQuickPanelVisible
@@ -164,7 +172,9 @@ class LeanbackMainContentState(
     }
 
     fun changeCurrentIptv(iptv: Iptv, urlIdx: Int? = null) {
-        _isPanelVisible = false
+        // 只有换台才关面板；同频道换线路（含自动重试）保持面板，
+        // 否则流不稳时重试会反复把用户打开的节目单/面板关掉
+        if (iptv != _currentIptv) _isPanelVisible = false
         _isCatchupPlayback = false
 
         if (iptv == _currentIptv && urlIdx == null) return

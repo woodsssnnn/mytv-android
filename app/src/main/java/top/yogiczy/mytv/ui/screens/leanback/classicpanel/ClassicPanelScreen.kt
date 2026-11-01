@@ -66,6 +66,7 @@ fun LeanbackClassicPanelScreen(
     onIptvFavoriteToggle: (Iptv) -> Unit = {},
     onCatchupPlay: (Iptv, EpgProgramme) -> Unit = { _, _ -> },
     onRemind: (Iptv, EpgProgramme) -> Unit = { _, _ -> },
+    initialEpgListVisible: Boolean = false,
     onClose: () -> Unit = {},
     autoCloseState: PanelAutoCloseState = rememberPanelAutoCloseState(
         timeout = Constants.UI_SCREEN_AUTO_CLOSE_DELAY,
@@ -93,6 +94,7 @@ fun LeanbackClassicPanelScreen(
             onIptvFavoriteToggle = onIptvFavoriteToggle,
             onCatchupPlay = onCatchupPlay,
             onRemind = onRemind,
+            initialEpgListVisible = initialEpgListVisible,
             onUserAction = { autoCloseState.active() },
         )
     }
@@ -143,6 +145,7 @@ private fun LeanbackClassicPanelScreenContent(
     onIptvFavoriteToggle: (Iptv) -> Unit = {},
     onCatchupPlay: (Iptv, EpgProgramme) -> Unit = { _, _ -> },
     onRemind: (Iptv, EpgProgramme) -> Unit = { _, _ -> },
+    initialEpgListVisible: Boolean = false,
     onUserAction: () -> Unit = {},
 ) {
     val iptvGroupList = iptvGroupListProvider()
@@ -159,7 +162,7 @@ private fun LeanbackClassicPanelScreenContent(
     var focusedIptv by remember { mutableStateOf(currentIptvProvider()) }
     var focusedIptvFocusRequester by remember { mutableStateOf(FocusRequester.Default) }
 
-    var epgListVisible by remember { mutableStateOf(false) }
+    var epgListVisible by remember { mutableStateOf(initialEpgListVisible) }
 
     Row(modifier = modifier) {
         LeanbackClassicPanelIptvGroupList(

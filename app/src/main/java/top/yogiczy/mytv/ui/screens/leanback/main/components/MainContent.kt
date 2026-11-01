@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -31,6 +34,7 @@ import top.yogiczy.mytv.data.entities.IptvGroupList
 import top.yogiczy.mytv.data.entities.IptvGroupList.Companion.iptvIdx
 import top.yogiczy.mytv.data.entities.IptvGroupList.Companion.iptvList
 import top.yogiczy.mytv.ui.screens.leanback.classicpanel.LeanbackClassicPanelScreen
+import top.yogiczy.mytv.ui.screens.leanback.home.LeanbackHomeScreen
 import top.yogiczy.mytv.ui.screens.leanback.components.LeanbackVisible
 import top.yogiczy.mytv.ui.screens.leanback.monitor.LeanbackMonitorScreen
 import top.yogiczy.mytv.ui.screens.leanback.panel.LeanbackPanelChannelNoSelectScreen
@@ -93,12 +97,16 @@ fun LeanbackMainContent(
             if (!mainContentState.isPanelVisible
                 && !mainContentState.isSettingsVisible
                 && !mainContentState.isQuickPanelVisible
+                && !mainContentState.isHomeVisible
             ) {
                 focusRequester.requestFocus()
             }
             delay(100)
         }
     }
+
+    // 首页「节目单·回看」卡片：开面板并直接展开节目单列
+    var openGuideOnPanel by remember { mutableStateOf(false) }
 
     LeanbackBackPressHandledArea(
         modifier = modifier,
@@ -239,7 +247,28 @@ fun LeanbackMainContent(
                 )
             }
 
-            LeanbackVisible({ !settingsViewModel.uiUseClassicPanelScreen && mainContentState.isPanelVisible }) {
+            LeanbackVisible({ mainContentState.isHomeVisible }) {
+            LeanbackHomeScreen(
+                showSettings = !settingsViewModel.appElderMode,
+                onLive = { mainContentState.isHomeVisible = false },
+                onFavorites = {
+                    settingsViewModel.iptvChannelFavoriteListVisible = true
+                    mainContentState.isHomeVisible = false
+                    mainContentState.isPanelVisible = true
+                },
+                onGuide = {
+                    openGuideOnPanel = true
+                    mainContentState.isPanelVisible = true
+                    mainContentState.isHomeVisible = false
+                },
+                onSettings = {
+                    mainContentState.isSettingsVisible = true
+                    mainContentState.isHomeVisible = false
+                },
+            )
+        }
+
+        LeanbackVisible({ !settingsViewModel.uiUseClassicPanelScreen && mainContentState.isPanelVisible }) {
                 LeanbackPanelScreen(
                     iptvGroupListProvider = { iptvGroupList },
                     epgListProvider = { epgList },
@@ -291,7 +320,10 @@ fun LeanbackMainContent(
                     onIptvFavoriteListVisibleChange = {
                         settingsViewModel.iptvChannelFavoriteListVisible = it
                     },
-                    onClose = { mainContentState.isPanelVisible = false },
+                    onClose = {
+                        mainContentState.isPanelVisible = false
+                        openGuideOnPanel = false
+                    },
                     iptvFavoriteEnableProvider = { settingsViewModel.iptvChannelFavoriteEnable },
                     onCatchupPlay = { iptv, programme ->
                         mainContentState.playCatchup(iptv, programme)
@@ -299,6 +331,7 @@ fun LeanbackMainContent(
                     onRemind = { iptv, programme ->
                         mainContentState.remindProgramme(iptv, programme)
                     },
+                    initialEpgListVisible = openGuideOnPanel,
                 )
             }
         }
