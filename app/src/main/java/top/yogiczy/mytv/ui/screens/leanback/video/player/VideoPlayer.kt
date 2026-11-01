@@ -32,6 +32,12 @@ abstract class LeanbackVideoPlayer(
 
     abstract fun pause()
 
+    /** 跳转到指定位置（毫秒）。直播流受窗口限制，回看/时移使用 */
+    abstract fun seekTo(positionMs: Long)
+
+    /** 当前媒体时长（毫秒），未知返回 0 */
+    abstract fun duration(): Long
+
     abstract fun setVideoSurfaceView(surfaceView: SurfaceView)
 
     private val onResolutionListeners = mutableListOf<(width: Int, height: Int) -> Unit>()

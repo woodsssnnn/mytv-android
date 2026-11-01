@@ -1,5 +1,6 @@
 package top.yogiczy.mytv.data.repositories.epg
 
+import android.content.Context
 import android.util.Xml
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -128,7 +129,14 @@ private class EpgXmlRepository : FileCacheRepository("epg.xml") {
      * 获取远程xml
      */
     private suspend fun fetchXml(url: String): String = withContext(Dispatchers.IO) {
-        log.d("获取远程节目单xml: $url")
+        log.d("获取节目单xml: $url")
+
+        // asset:// 协议：读取 APK 内置节目单兜底（零网络依赖，与直播源同模式）
+        if (url.startsWith("asset://")) {
+            val assetPath = url.removePrefix("asset://")
+            val context: Context = top.yogiczy.mytv.AppGlobal.context
+            return@withContext context.assets.open(assetPath).bufferedReader().use { it.readText() }
+        }
 
         val client = OkHttpClient()
         val request = Request.Builder().url(url).build()

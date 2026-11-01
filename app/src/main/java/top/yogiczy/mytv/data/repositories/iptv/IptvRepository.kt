@@ -72,7 +72,20 @@ class IptvRepository : FileCacheRepository("iptv.txt") {
             }
 
             val parser = IptvParser.instances.first { it.isSupport(sourceUrl, sourceData) }
-            val groupList = parser.parse(sourceData)
+            var groupList = parser.parse(sourceData)
+
+            // 适老过滤：购物/导购/测试类频道默认剔除（正则可配，长辈误触概率最高的频道类型）
+            if (SP.iptvChannelFilterEnable) {
+                val re = SP.iptvChannelFilterRegex.toRegex(RegexOption.IGNORE_CASE)
+                groupList = IptvGroupList(groupList.map { group ->
+                    IptvGroup(
+                        name = group.name,
+                        iptvList = IptvList(group.iptvList.filter { iptv -> !re.containsMatchIn(iptv.name) })
+                    )
+                }.filter { it.iptvList.isNotEmpty() })
+                log.i("频道过滤后：${groupList.size}个分组，${groupList.flatMap { it.iptvList }.size}个频道")
+            }
+
             log.i("解析直播源完成：${groupList.size}个分组，${groupList.flatMap { it.iptvList }.size}个频道")
 
             if (simplify) {

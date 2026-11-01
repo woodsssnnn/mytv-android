@@ -228,6 +228,13 @@ class LeanbackMedia3VideoPlayer(
         videoPlayer.pause()
     }
 
+    override fun seekTo(positionMs: Long) {
+        videoPlayer.seekTo(positionMs)
+    }
+
+    override fun duration(): Long =
+        if (videoPlayer.playbackState >= Player.STATE_READY) videoPlayer.duration else 0L
+
     override fun setVideoSurfaceView(surfaceView: SurfaceView) {
         videoPlayer.setVideoSurfaceView(surfaceView)
     }

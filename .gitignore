@@ -30,3 +30,6 @@ _work/
 source-private.properties
 *.keystore
 .mimosa/scripts/__pycache__/
+
+# EPG数据同样不入库
+app/src/main/assets/*.gz

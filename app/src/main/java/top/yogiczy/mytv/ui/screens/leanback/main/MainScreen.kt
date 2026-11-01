@@ -41,6 +41,12 @@ import top.yogiczy.mytv.ui.screens.leanback.settings.LeanbackSettingsScreen
 import top.yogiczy.mytv.ui.theme.LeanbackTheme
 import top.yogiczy.mytv.ui.utils.HttpServer
 import top.yogiczy.mytv.ui.utils.handleLeanbackKeyEvents
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import androidx.compose.runtime.DisposableEffect
 
 @Composable
 fun LeanbackMainScreen(
@@ -49,6 +55,22 @@ fun LeanbackMainScreen(
     mainViewModel: LeanbackMainViewModel = viewModel(),
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
+
+    // 断网自愈：网络恢复时重试源加载/补拉节目单（播放恢复由环形重试天然兜底）
+    DisposableEffect(Unit) {
+        val context = top.yogiczy.mytv.AppGlobal.context
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                mainViewModel.onNetworkRestored()
+            }
+        }
+        cm.registerNetworkCallback(
+            NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(),
+            callback
+        )
+        onDispose { cm.unregisterNetworkCallback(callback) }
+    }
 
     when (val s = uiState) {
         is LeanbackMainUiState.Ready -> LeanbackMainContent(

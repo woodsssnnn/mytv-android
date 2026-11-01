@@ -74,6 +74,12 @@ object SP {
         /** 直播源频道收藏列表 */
         IPTV_CHANNEL_FAVORITE_LIST,
 
+        /** 频道过滤开关（购物/测试类自动剔除） */
+        IPTV_CHANNEL_FILTER_ENABLE,
+
+        /** 频道过滤正则 */
+        IPTV_CHANNEL_FILTER_REGEX,
+
         /** ==================== 节目单 ==================== */
         /** 启用节目单 */
         EPG_ENABLE,
@@ -210,6 +216,16 @@ object SP {
     var iptvChannelFavoriteList: Set<String>
         get() = sp.getStringSet(KEY.IPTV_CHANNEL_FAVORITE_LIST.name, emptySet()) ?: emptySet()
         set(value) = sp.edit().putStringSet(KEY.IPTV_CHANNEL_FAVORITE_LIST.name, value).apply()
+
+    /** 频道过滤开关：默认开，自动剔除购物/导购/测试频道（适老：误触概率最高的频道类型） */
+    var iptvChannelFilterEnable: Boolean
+        get() = sp.getBoolean(KEY.IPTV_CHANNEL_FILTER_ENABLE.name, true)
+        set(value) = sp.edit().putBoolean(KEY.IPTV_CHANNEL_FILTER_ENABLE.name, value).apply()
+
+    /** 频道过滤正则（忽略大小写），逗号语义用 | 分隔 */
+    var iptvChannelFilterRegex: String
+        get() = sp.getString(KEY.IPTV_CHANNEL_FILTER_REGEX.name, "")!!.ifBlank { "购物|导购|测试" }
+        set(value) = sp.edit().putString(KEY.IPTV_CHANNEL_FILTER_REGEX.name, value).apply()
 
     /** ==================== 节目单 ==================== */
     /** 启用节目单 */

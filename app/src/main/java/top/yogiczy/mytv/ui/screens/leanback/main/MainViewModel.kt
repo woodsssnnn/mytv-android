@@ -35,6 +35,20 @@ class LeanbackMainViewModel : ViewModel() {
         }
     }
 
+    /** 断网自愈：网络恢复回调（Error 则重试全链，Ready 则仅补拉节目单） */
+    fun onNetworkRestored() {
+        viewModelScope.launch {
+            when (_uiState.value) {
+                is LeanbackMainUiState.Error -> {
+                    refreshIptv()
+                    refreshEpg()
+                }
+                is LeanbackMainUiState.Ready -> refreshEpg()
+                else -> {}
+            }
+        }
+    }
+
     private suspend fun refreshIptv() {
         // 多级源回退链：用户自设源 → BuildConfig 注入远程链 → 内置 asset 兜底
         val sourceUrls = buildList {
