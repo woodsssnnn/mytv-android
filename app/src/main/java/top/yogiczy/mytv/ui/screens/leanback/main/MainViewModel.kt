@@ -44,6 +44,16 @@ class LeanbackMainViewModel : ViewModel() {
         }.filter { it.isNotBlank() }
 
         for (sourceUrl in sourceUrls) {
+            // asset 兜底级：文件不存在（公开构建）直接跳过，不做无谓重试
+            if (sourceUrl.startsWith("asset://")) {
+                val assetPath = sourceUrl.removePrefix("asset://")
+                val exists = try {
+                    top.yogiczy.mytv.AppGlobal.context.assets.list("")?.contains(assetPath) == true
+                } catch (e: Exception) {
+                    false
+                }
+                if (!exists) continue
+            }
             val result = kotlin.runCatching {
                 var got: IptvGroupList? = null
                 flow {
