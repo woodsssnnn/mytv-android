@@ -20,3 +20,13 @@
 .cxx
 local.properties
 key.properties
+
+# ==== 合规边界：数据与私有配置一律不入库（工具公开/数据私有） ====
+app/src/main/assets/*.m3u
+live/
+pools/
+_work/
+*.tsv
+source-private.properties
+*.keystore
+.mimosa/

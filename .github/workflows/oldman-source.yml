@@ -1,0 +1,59 @@
+name: daily-source
+on:
+  schedule:
+    - cron: '30 21 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: oldman, fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: pools
+        run: |
+          mkdir -p pools _work live
+          for p in "mytv-android/iptv-api/master/output/result.m3u iptvapi" "iptv-org/iptv/master/streams/cn_cctv.m3u iptvorg-cctv" "iptv-org/iptv/master/streams/cn.m3u iptvorg-cn" "live.fanmingming.com/e.m3u fanmingming"; do
+            set -- $p; curl -sfL --max-time 60 -o "pools/$2.m3u" "https://raw.githubusercontent.com/$1" || curl -sfL --max-time 60 -o "pools/$2.m3u" "https://$1" || true
+          done
+          cat pools/*.m3u > _work/all.m3u
+      - name: candidates
+        run: |
+          python -c "
+          import io
+          L=io.open('_work/all.m3u',encoding='utf-8',errors='replace').read().splitlines()
+          o=[];i=0
+          while i<len(L):
+            if L[i].startswith('#EXTINF'):
+              n=L[i][L[i].rfind(',')+1:].strip(); j=i+1
+              while j<len(L) and L[j].strip().startswith('#'): j+=1
+              u=L[j].strip() if j<len(L) else ''
+              if u: o.append(n+'\t'+u)
+              i=j+1
+            else: i+=1
+          io.open('_work/candidates.tsv','w',encoding='utf-8').write('\n'.join(o))"
+      - name: probe
+        run: |
+          sed 's/\t/|/' _work/candidates.tsv | xargs -P 20 -I{} bash -c 'I="{}"; n="${I%%|*}"; u="${I#*|}"; read -r c l < <(curl -o /dev/null -s -L -m 9 --connect-timeout 5 -r 0-2047 -w "%{http_code} %{time_total}" "$u" 2>/dev/null || echo "ERR 99"); echo -e "$c\t$l\t$n\t$u"' > _work/probe.tsv || true
+      - name: build
+        run: |
+          PROBE_FILE=_work/probe.tsv python scripts/build_source.py < _work/candidates.tsv > live/old-man-tv.m3u
+          curl -sfL --max-time 120 -o _work/e.xml https://live.fanmingming.com/e.xml || curl -sfL --max-time 120 -o _work/e.xml https://raw.githubusercontent.com/fanmingming/live/main/e.xml || true
+          [ -s _work/e.xml ] && python scripts/build_epg.py < _work/e.xml | gzip > live/epg.xml.gz || true
+      - name: upload (default, private-to-you)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oldman-live-${{ github.run_number }}
+          path: live/
+      - name: push to your private repo (optional)
+        if: ${{ secrets.DEST_REPO != '' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          rm -rf dest && git clone --depth 1 "https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/${{ secrets.DEST_REPO }}.git" dest
+          mkdir -p dest/live && cp live/* dest/live/ && cd dest
+          git add -A && git commit -m "daily $(date -u +%F)" || echo no-changes
+          git push

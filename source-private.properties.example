@@ -1,0 +1,10 @@
+# source-private.properties 模板 —— 复制为 source-private.properties 并填入你自己的地址
+# 本文件决定 App 启动时的源加载链：用户面板自设源 → remote_source_urls 逐个尝试 → 内置 asset 兜底
+#
+# 每日自动生成的源与节目单（可选）：fork 本仓库后启用 daily-source 工作流，
+# 配置 Secrets 将产物推送到你自己的私有仓库，然后把私有仓库的 raw 地址填到下面。
+#
+# 远程精选源（逗号分隔多镜像，按可达性排序；留空=仅用内置兜底源）
+remote_source_urls=
+# 节目单备选链（逗号分隔；留空=不启用远程EPG）
+epg_fallback_urls=

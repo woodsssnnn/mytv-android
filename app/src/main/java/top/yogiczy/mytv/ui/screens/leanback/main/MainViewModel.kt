@@ -36,59 +36,94 @@ class LeanbackMainViewModel : ViewModel() {
     }
 
     private suspend fun refreshIptv() {
-        flow {
-            emit(
-                iptvRepository.getIptvGroupList(
-                    sourceUrl = SP.iptvSourceUrl,
-                    cacheTime = SP.iptvSourceCacheTime,
-                    simplify = SP.iptvSourceSimplify,
-                )
+        // 多级源回退链：用户自设源 → BuildConfig 注入远程链 → 内置 asset 兜底
+        val sourceUrls = buildList {
+            if (SP.iptvSourceUrl != Constants.IPTV_SOURCE_URL) add(SP.iptvSourceUrl)
+            addAll(Constants.IPTV_REMOTE_SOURCE_URLS)
+            add(Constants.IPTV_SOURCE_URL)
+        }.filter { it.isNotBlank() }
+
+        for (sourceUrl in sourceUrls) {
+            val result = kotlin.runCatching {
+                var got: IptvGroupList? = null
+                flow {
+                    emit(
+                        iptvRepository.getIptvGroupList(
+                            sourceUrl = sourceUrl,
+                            cacheTime = SP.iptvSourceCacheTime,
+                            simplify = SP.iptvSourceSimplify,
+                        )
+                    )
+                }
+                    .retryWhen { _, attempt ->
+                        if (attempt >= Constants.HTTP_RETRY_COUNT) return@retryWhen false
+                        _uiState.value = LeanbackMainUiState.Loading(
+                            "获取直播源(${attempt + 1}/${Constants.HTTP_RETRY_COUNT})..."
+                        )
+                        delay(Constants.HTTP_RETRY_INTERVAL)
+                        true
+                    }
+                    .collect { got = it }
+                got ?: error("直播源返回为空")
+            }
+
+            result.fold(
+                onSuccess = { groupList ->
+                    _uiState.value = LeanbackMainUiState.Ready(iptvGroupList = groupList)
+                    SP.iptvSourceUrlHistoryList += sourceUrl
+                    return
+                },
+                onFailure = {
+                    SP.iptvSourceUrlHistoryList -= sourceUrl
+                }
             )
         }
-            .retryWhen { _, attempt ->
-                if (attempt >= Constants.HTTP_RETRY_COUNT) return@retryWhen false
 
-                _uiState.value =
-                    LeanbackMainUiState.Loading("获取远程直播源(${attempt + 1}/${Constants.HTTP_RETRY_COUNT})...")
-                delay(Constants.HTTP_RETRY_INTERVAL)
-                true
-            }
-            .catch {
-                _uiState.value = LeanbackMainUiState.Error(it.message)
-                SP.iptvSourceUrlHistoryList -= SP.iptvSourceUrl
-            }
-            .map {
-                _uiState.value = LeanbackMainUiState.Ready(iptvGroupList = it)
-                SP.iptvSourceUrlHistoryList += SP.iptvSourceUrl
-                it
-            }
-            .collect()
+        _uiState.value = LeanbackMainUiState.Error(
+            "直播源不可用。请按菜单键(或长按OK)打开设置配置直播源，" +
+                    "或在电脑浏览器打开 http://<电视IP>:10481 推送直播源"
+        )
     }
 
     private suspend fun refreshEpg() {
         if (_uiState.value is LeanbackMainUiState.Ready) {
             val iptvGroupList = (_uiState.value as LeanbackMainUiState.Ready).iptvGroupList
 
-            flow {
-                emit(
-                    epgRepository.getEpgList(
-                        xmlUrl = SP.epgXmlUrl,
-                        filteredChannels = iptvGroupList.iptvList.map { it.channelName },
-                        refreshTimeThreshold = SP.epgRefreshTimeThreshold,
-                    )
+            // EPG 多地址回退 + 快速放弃（避免开机空转）
+            val epgUrls = buildList {
+                if (SP.epgXmlUrl != Constants.EPG_XML_URL) add(SP.epgXmlUrl)
+                add(Constants.EPG_XML_URL)
+                addAll(Constants.EPG_XML_FALLBACK_URLS)
+            }.filter { it.isNotBlank() }.distinct()
+
+            for (epgUrl in epgUrls) {
+                val result = kotlin.runCatching {
+                    var got: EpgList? = null
+                    flow {
+                        emit(
+                            epgRepository.getEpgList(
+                                xmlUrl = epgUrl,
+                                filteredChannels = iptvGroupList.iptvList.map { it.channelName },
+                                refreshTimeThreshold = SP.epgRefreshTimeThreshold,
+                            )
+                        )
+                    }
+                        .retry(Constants.EPG_RETRY_COUNT) { delay(Constants.HTTP_RETRY_INTERVAL); true }
+                        .collect { got = it }
+                    got ?: error("EPG返回为空")
+                }
+
+                result.fold(
+                    onSuccess = { epgList ->
+                        _uiState.value =
+                            (_uiState.value as LeanbackMainUiState.Ready).copy(epgList = epgList)
+                        SP.epgXmlUrlHistoryList += epgUrl
+                        return
+                    },
+                    onFailure = { SP.epgXmlUrlHistoryList -= epgUrl }
                 )
             }
-                .retry(Constants.HTTP_RETRY_COUNT) { delay(Constants.HTTP_RETRY_INTERVAL); true }
-                .catch {
-                    emit(EpgList())
-                    SP.epgXmlUrlHistoryList -= SP.epgXmlUrl
-                }
-                .map { epgList ->
-                    _uiState.value =
-                        (_uiState.value as LeanbackMainUiState.Ready).copy(epgList = epgList)
-                    SP.epgXmlUrlHistoryList += SP.epgXmlUrl
-                }
-                .collect()
+            // EPG 全部失败不阻塞观看：保持空节目单
         }
     }
 }

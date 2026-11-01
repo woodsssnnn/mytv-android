@@ -16,9 +16,29 @@ object Constants {
 
     /**
      * IPTV源地址：APK 内置精选源（asset:// 协议），零网络依赖，开机即用
-     * 更新方式：替换 app/src/main/assets/old-man-tv.m3u 后重新打包
+     * 文件不入库（合规边界），由使用者自行放入 app/src/main/assets/
+     * 缺失时该兜底级自动跳过
      */
     const val IPTV_SOURCE_URL = "asset://old-man-tv.m3u"
+
+    /**
+     * 每日再生远程精选源（构建期由 source-private.properties 注入，公开构建为空链）
+     * 应用加载顺序：用户面板自设源 → 本链逐个尝试 → 内置 asset 兜底
+     */
+    val IPTV_REMOTE_SOURCE_URLS: List<String> =
+        top.yogiczy.mytv.BuildConfig.REMOTE_SOURCE_URLS.toList()
+
+    /**
+     * 节目单默认地址（构建期注入链的首位；空=不启用远程EPG）
+     */
+    val EPG_XML_URL: String
+        get() = top.yogiczy.mytv.BuildConfig.EPG_FALLBACK_URLS.firstOrNull() ?: ""
+
+    /**
+     * 节目单备选地址
+     */
+    val EPG_XML_FALLBACK_URLS: List<String>
+        get() = top.yogiczy.mytv.BuildConfig.EPG_FALLBACK_URLS.drop(1)
 
     /**
      * IPTV源缓存时间（毫秒）
@@ -26,14 +46,14 @@ object Constants {
     const val IPTV_SOURCE_CACHE_TIME = 1000 * 60 * 60 * 24L // 24小时
 
     /**
-     * 节目单XML地址
-     */
-    const val EPG_XML_URL = "http://epg.51zmt.top:8000/e.xml.gz"
-
-    /**
      * 节目单刷新时间阈值（小时）
      */
     const val EPG_REFRESH_TIME_THRESHOLD = 2 // 不到2点不刷新
+
+    /**
+     * 节目单重试次数（适老化：快速放弃，避免开机空转半分钟）
+     */
+    const val EPG_RETRY_COUNT = 3L
 
     /**
      * Git最新版本信息

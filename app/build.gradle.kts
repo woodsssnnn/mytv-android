@@ -14,6 +14,22 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// 合规架构：私有源/EPG 配置通过 gitignored 的 source-private.properties 在构建期注入。
+// 公开构建（无该文件）= 空链 = 应用引导用户自行配置；任何人填好自己的文件即可得到完整版。
+val sourcePrivateFile = rootProject.file("source-private.properties")
+val sourcePrivate = Properties()
+if (sourcePrivateFile.exists()) {
+    sourcePrivate.load(FileInputStream(sourcePrivateFile))
+}
+
+fun stringArrayBuildConfig(name: String): String {
+    val items = sourcePrivate.getProperty(name, "")
+        ?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+    return items.joinToString(separator = ", ", prefix = "new String[]{", postfix = "}") { url ->
+        "\"" + url.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+    }
+}
+
 android {
     namespace = "top.yogiczy.mytv"
     compileSdk = 34
@@ -33,6 +49,14 @@ android {
         ndk {
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86_64"))
         }
+
+        buildConfigField("String[]", "REMOTE_SOURCE_URLS", stringArrayBuildConfig("remote_source_urls"))
+        buildConfigField("String[]", "EPG_FALLBACK_URLS", stringArrayBuildConfig("epg_fallback_urls"))
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -51,9 +75,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
-    }
-    buildFeatures {
-        compose = true
     }
     packaging {
         resources {
