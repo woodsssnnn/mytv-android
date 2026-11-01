@@ -42,6 +42,7 @@ jobs:
         run: |
           awk -F'\t' '$1>=200 && $1<400 {print $3"\t"$4}' _work/probe.tsv | sort -u > _work/alive.tsv
           sudo apt-get -y install ffmpeg tesseract-ocr >/dev/null 2>&1 || true
+          python -m pip install --quiet pillow
           # 台标模板哈希: runner 可达 fanmingming 台标库, 抓模板图与流帧同法哈希
           TPL_HASHES=$(python - <<'EOF'
           import urllib.request, io, sys, hashlib
@@ -73,7 +74,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: oldman-live-${{ github.run_number }}
-          path: live/
+          path: |
+            live/
+            _work/identity.tsv
+            _work/probe.tsv
       - name: push to your private repo (optional)
         env:
           DEST_REPO: ${{ secrets.DEST_REPO }}
