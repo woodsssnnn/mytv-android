@@ -75,11 +75,14 @@ jobs:
           name: oldman-live-${{ github.run_number }}
           path: live/
       - name: push to your private repo (optional)
-        if: ${{ secrets.DEST_REPO != '' }}
+        env:
+          DEST_REPO: ${{ secrets.DEST_REPO }}
+          DEST_TOKEN: ${{ secrets.DEST_TOKEN }}
         run: |
+          if [ -z "$DEST_REPO" ] || [ -z "$DEST_TOKEN" ]; then echo "skip: secrets not configured"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          rm -rf dest && git clone --depth 1 "https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/${{ secrets.DEST_REPO }}.git" dest
+          rm -rf dest && git clone --depth 1 "https://x-access-token:${DEST_TOKEN}@github.com/${DEST_REPO}.git" dest
           mkdir -p dest/live && cp live/* dest/live/ && cd dest
           git add -A && git commit -m "daily $(date -u +%F)" || echo no-changes
           git push
