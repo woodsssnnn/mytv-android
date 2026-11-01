@@ -1,128 +1,65 @@
 <div align="center">
-    <h1>我的电视</h1>
-<div align="center">
 
-![GitHub repo size](https://img.shields.io/github/repo-size/yaoxieyoulei/mytv-android)
-![GitHub Repo stars](https://img.shields.io/github/stars/yaoxieyoulei/mytv-android)
-![GitHub all releases](https://img.shields.io/github/downloads/yaoxieyoulei/mytv-android/total)
+# 电视直播 · 适老版
+
+**基于开源项目 [mytv-android](https://github.com/yaoxieyoulei/mytv-android) (MIT) 的适老化定制分支**
+
+`Android TV` · `长辈模式` · `数字选台` · `永续播放` · `工具公开 / 数据私有`
 
 </div>
-    <p>使用Android原生开发的视频播放软件</p>
-</div>
 
-## 使用
+---
 
-### 操作方式
+## 这是什么
 
-> 遥控器操作方式与主流视频播放软件类似；
+为家里老人定制的电视直播播放器。目标只有一句话：**开机即播、遥控器怎么按都不坏、断流自己恢复**。
 
-- 频道切换：使用上下方向键，或者数字键切换频道；屏幕上下滑动；
-- 频道选择：OK键；单击屏幕；
-- 设置页面：按下菜单、帮助键，长按OK键；双击、长按屏幕；
+在保持上游简洁架构的基础上做了三层改造：
 
-### 触摸键位对应
+| 层 | 改造内容 |
+|---|---|
+| 适老化 | 开机自启+频道记忆、数字键选台（列表位置=传统频道号）、长辈模式（设置入口全屏蔽，仅网页面板可开）、字体放大、经典三列选台面板 |
+| 播放稳定性 | 线路**环形重试**（全部线路失败后回到第 1 条继续，永不停机）、断流 8 秒快切、多级源回退链（面板自设源→注入远程链→内置兜底→引导页）、EPG 多地址回退+快速放弃 |
+| 运维 | 网页面板 `http://电视IP:10481`：开关长辈模式 / 推送源 / 推送 EPG / 查看日志 |
 
-- 方向键：屏幕上下左右滑动
-- OK键：点击屏幕
-- 长按OK键：长按屏幕
-- 菜单、帮助键：双击屏幕
+## 合规边界（重要）
 
-### 自定义设置
+本仓库**只含工具，不含数据**：
 
-- 访问以下网址：`http://<设备IP>:10481`
-- 打开应用设置界面，移到最后一项
-- 支持自定义订阅源、自定义节目单、缓存时间等等
-- 须知：网页中引用了`jsdelivr`的cdn，请确保能够正常访问
+- ❌ 不内置、不提交任何频道直播流地址、EPG 数据、私源 URL
+- ✅ 源码、数据管道脚本（公开池抓取→实测连通性→筛选）、工作流全部公开
+- ✅ 私有数据通过 `source-private.properties`（gitignored）在构建期注入，填入你自己的源即得完整版
 
-### 自定义订阅源
+详见 [ARCHITECTURE.md](ARCHITECTURE.md) 与 [PRIVACY-SETUP.md](PRIVACY-SETUP.md)。
 
-- 设置入口：自定义设置网址
-- 格式支持：m3u格式、tvbox格式
+> 仓库 Releases 提供的是**公开干净版** APK（零数据，安装后显示配置引导）。
+> 填好私有配置自行构建，即得到完整体验。
 
-### 多订阅源
+## 遥控器（教老人三句话）
 
-- 设置入口：打开应用设置界面，选中`自定义订阅源`项，点击后将弹出历史订阅源列表
-- 历史订阅源列表：短按可切换当前订阅源（需重启），长按将清除历史记录；该功能类似于`多仓`，主要用于简化订阅源切换流程
-- 须知：
-    1. 当订阅源数据获取成功时，会将该订阅源保存到历史订阅源列表中
-    2. 当订阅源数据获取失败时，会将该订阅源移出历史订阅源列表
+- **换台**：上下方向键，或数字键直选（1=CCTV1、13=CCTV-13 新闻、19+=卫视）
+- **看所有台**：OK 键打开频道列表，长按 OK 收藏
+- **按乱了**：按返回键退出当前界面；长辈模式下菜单键/长按 OK 只会打开频道列表，坏不了
 
-### 多线路
+## 接力（fork 者看这里）
 
-- 功能描述：同一频道拥有多个播放地址，相关标识位于频道名称后面
-- 切换线路：左右方向键；屏幕左右滑动
-- 自动切换：当当前线路播放失败后，将自动播放下一个线路，直至最后
-- 须知：
-    1. 当某一线路播放成功后，会将该线路的`域名`保存到`可播放域名列表`中
-    2. 当某一线路播放失败后，会将该线路的`域名`移出`可播放域名列表`
-    3. 当播放某一频道时，将优先选择匹配`可播放域名列表`的线路
+```bash
+git clone -b oldman https://github.com/woodsssnnn/mytv-android.git
+cp source-private.properties.example source-private.properties   # 填你自己的源
+# 可选：放离线兜底源到 app/src/main/assets/old-man-tv.m3u（gitignored）
+./gradlew assembleRelease
+```
 
-### 自定义节目单
+每日数据管道（可选）：启用 `daily-source` 工作流，自动抓公开池→实测连通性→生成精选源+瘦身 EPG。
 
-- 设置入口：自定义设置网址
-- 格式支持：.xml、.xml.gz格式
+## 许可与致谢
 
-### 多节目单
+- 上游 [yaoxieyoulei/mytv-android](https://github.com/yaoxieyoulei/mytv-android)（MIT），本项目延续其 MIT 许可，原项目版权声明与 LICENSE 文件完整保留
+- 数据管道思路参考社区生态：[Guovin/iptv-api](https://github.com/Guovin/iptv-api)、[iptv-org/iptv](https://github.com/iptv-org/iptv)、[fanmingming/live](https://github.com/fanmingming/live)
+- 仅供个人学习与家庭使用；频道数据的合法性由使用者自行判断与承担，与上游作者无关
 
-- 设置入口：打开应用设置界面，选中`自定义节目单`项，点击后将弹出历史节目单列表
-- 具体功能请参照`多订阅源`
+## 免责声明
 
-### 当天节目单
-
-- 功能入口：打开应用选台界面，选中某一频道，按下菜单、帮助键、双击屏幕，将打开当天节目单
-- 须知：由于该应用不支持回放功能，所以更早的节目单没必要展示
-
-### 频道收藏
-
-- 功能入口：打开应用选台界面，选中某一频道，长按OK键、长按屏幕，将收藏/取消收藏该频道
-- 切换显示收藏列表：首先移动到频道列表顶部，然后再次按下方向键上，将切换显示收藏列表；手机长按频道信息切换
-
-## 下载
-
-可以通过右侧release进行下载或拉取代码到本地进行编译
-
-## 说明
-
-- 主要解决 [my_tv](https://github.com/yaoxieyoulei/my_tv)（flutter）在低端设备上播放（4k）视频卡顿掉帧
-- 仅支持Android5及以上
-- 网络环境必须支持IPV6（默认订阅源）
-- 只在自家电视上测过，其他电视稳定性未知
-
-## 功能
-
-- [x] 换台反转
-- [x] 数字选台
-- [x] 节目单
-- [x] 开机自启
-- [x] 自动更新
-- [x] 多订阅源
-- [x] 多线路
-- [x] 自定义订阅源
-- [x] 多节目单
-- [x] 自定义节目单
-- [x] 频道收藏
-- [x] 应用自定义设置
-
-## 更新日志
-
-[更新日志](./CHANGELOG.md)
-
-## 声明
-
-此项目（我的电视）是个人为了兴趣而开发, 仅用于学习和测试。 所用API皆从官方网站收集, 不提供任何破解内容。
-
-## 技术交流
-
-Telegram: https://t.me/mytv_android
-
-## 赞赏
-
-<img src="./screenshots/mm_reward_qrcode.png" width="48%"/>
-
-## 致谢
-
-- [my-tv](https://github.com/lizongying/my-tv)
-- [参考设计稿](https://github.com/lizongying/my-tv/issues/594)
-- [IPV6直播源](https://github.com/zhumeng11/IPTV)
-- [live](https://github.com/fanmingming/live)
-- 等等
+本项目为个人学习性质的家庭定制工具，不存储、不分发任何受版权保护的音视频内容；
+仓库内不包含任何频道地址数据。使用者通过自行配置的第三方地址访问的内容，
+其合法性与可用性由使用者自行负责。
