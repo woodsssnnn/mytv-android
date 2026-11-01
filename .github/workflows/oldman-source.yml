@@ -67,7 +67,13 @@ jobs:
           echo "identity: ok=$(grep -c '	ok$' _work/identity.tsv 2>/dev/null || echo 0) mismatch=$(grep -c '	mismatch' _work/identity.tsv 2>/dev/null || echo 0)"
       - name: build
         run: |
-          PROBE_FILE=_work/probe.tsv python scripts/build_source.py < _work/candidates.tsv > live/old-man-tv.m3u
+          # identity 预过滤: mismatch(串台/测试卡)剔除; identity 缺失时用原始候选
+          if [ -s _work/identity.tsv ]; then
+            awk -F'\t' 'NR==FNR { v[$1]=$2; next } { vn=v[$2]; if (vn=="mismatch") next; print $1"\t"$2 }' _work/identity.tsv _work/candidates.tsv > _work/candidates-verified.tsv
+          else
+            cp _work/candidates.tsv _work/candidates-verified.tsv
+          fi
+          PROBE_FILE=_work/probe.tsv python scripts/build_source.py < _work/candidates-verified.tsv > live/old-man-tv.m3u
           curl -sfL --max-time 120 -o _work/e.xml https://live.fanmingming.com/e.xml || curl -sfL --max-time 120 -o _work/e.xml https://raw.githubusercontent.com/fanmingming/live/main/e.xml || true
           [ -s _work/e.xml ] && python scripts/build_epg.py < _work/e.xml | gzip > live/epg.xml.gz || true
       - name: upload (default, private-to-you)
