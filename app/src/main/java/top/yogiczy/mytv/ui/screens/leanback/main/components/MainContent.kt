@@ -1,5 +1,6 @@
 package top.yogiczy.mytv.ui.screens.leanback.main.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -109,13 +110,14 @@ fun LeanbackMainContent(
             else onBackPressed()
         },
     ) {
-        LeanbackVideoScreen(
-            state = videoPlayerState,
-            showMetadataProvider = { settingsViewModel.debugShowVideoPlayerMetadata },
-            modifier = Modifier
-                .focusRequester(focusRequester)
-                .focusable()
-                .handleLeanbackKeyEvents(
+        Box {
+            LeanbackVideoScreen(
+                state = videoPlayerState,
+                showMetadataProvider = { settingsViewModel.debugShowVideoPlayerMetadata },
+                modifier = Modifier
+                    .focusRequester(focusRequester)
+                    .focusable()
+                    .handleLeanbackKeyEvents(
                     onUp = {
                         if (settingsViewModel.iptvChannelChangeFlip) mainContentState.changeCurrentIptvToNext()
                         else mainContentState.changeCurrentIptvToPrev()
@@ -182,12 +184,22 @@ fun LeanbackMainContent(
                         if (mainContentState.currentIptv.urlList.size > 1) {
                             mainContentState.changeCurrentIptv(
                                 iptv = mainContentState.currentIptv,
-                                urlIdx = mainContentState.currentIptvUrlIdx + 1,
+                                urlIdx = mainContentState.currentIptvUrlIdx - 1,
                             )
                         }
                     },
                 ),
         )
+
+            // 适老化：换台黑幕——新画面就绪前遮盖残留帧（重试期间保持黑屏）
+            if (mainContentState.isSwitchingBlackout) {
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(androidx.compose.ui.graphics.Color.Black)
+                )
+            }
+        }
 
         CompositionLocalProvider(
             LocalDensity provides Density(

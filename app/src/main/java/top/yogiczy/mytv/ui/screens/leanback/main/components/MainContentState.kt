@@ -55,6 +55,10 @@ class LeanbackMainContentState(
             _isTempPanelVisible = value
         }
 
+    /** 换台黑幕：换台/换线路到新画面就绪前用黑色遮盖，避免老人误看残留帧 */
+    private var _isSwitchingBlackout by mutableStateOf(false)
+    val isSwitchingBlackout get() = _isSwitchingBlackout
+
     private var _isQuickPanelVisible by mutableStateOf(false)
     var isQuickPanelVisible
         get() = _isQuickPanelVisible
@@ -68,6 +72,7 @@ class LeanbackMainContentState(
         })
 
         videoPlayerState.onReady {
+            _isSwitchingBlackout = false
             coroutineScope.launch {
                 val name = _currentIptv.name
                 val urlIdx = _currentIptvUrlIdx
@@ -125,6 +130,7 @@ class LeanbackMainContentState(
         }
 
         _isTempPanelVisible = true
+        _isSwitchingBlackout = true
 
         _currentIptv = iptv
         SP.iptvLastIptvIdx = iptvGroupList.iptvIdx(_currentIptv)
