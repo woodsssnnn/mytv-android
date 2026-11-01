@@ -21,6 +21,21 @@ data class Iptv(
      * 播放地址
      */
     val urlList: List<String> = emptyList(),
+
+    /**
+     * 回看模式：default/append/shift/flussonic/flussonic-hls/xc/pltv；空=不支持
+     */
+    val catchupMode: String = "",
+
+    /**
+     * 回看地址模板（含 {utc}{utcend}{duration} 等占位符）
+     */
+    val catchupSource: String = "",
+
+    /**
+     * 可回看天数
+     */
+    val catchupDays: Int = 0,
 ) {
     companion object {
         val EXAMPLE = Iptv(

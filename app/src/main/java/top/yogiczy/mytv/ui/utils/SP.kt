@@ -93,6 +93,9 @@ object SP {
         /** 节目单历史列表 */
         EPG_XML_URL_HISTORY_LIST,
 
+        /** 节目单预约提醒列表（格式：频道名|startAt|标题） */
+        EPG_REMIND_LIST,
+
         /** ==================== 界面 ==================== */
         /** 显示节目进度 */
         UI_SHOW_EPG_PROGRAMME_PROGRESS,
@@ -247,6 +250,11 @@ object SP {
     var epgXmlUrlHistoryList: Set<String>
         get() = sp.getStringSet(KEY.EPG_XML_URL_HISTORY_LIST.name, emptySet()) ?: emptySet()
         set(value) = sp.edit().putStringSet(KEY.EPG_XML_URL_HISTORY_LIST.name, value).apply()
+
+    /** 节目单预约提醒列表（频道名|startAt|标题） */
+    var epgRemindList: Set<String>
+        get() = sp.getStringSet(KEY.EPG_REMIND_LIST.name, emptySet()) ?: emptySet()
+        set(value) = sp.edit().putStringSet(KEY.EPG_REMIND_LIST.name, value).apply()
 
     /** ==================== 界面 ==================== */
     /** 显示节目进度 */

@@ -22,12 +22,23 @@ class M3uIptvParser : IptvParser {
             val channelName = Regex("tvg-name=\"(.+?)\"").find(line)?.groupValues?.get(1) ?: name
             val groupName = Regex("group-title=\"(.+?)\"").find(line)?.groupValues?.get(1) ?: "其他"
 
+            // 回看属性（社区 de-facto 约定：catchup/catchup-type + catchup-source + catchup-days）
+            val catchupMode =
+                Regex("catchup(?:-type)?=\"(.+?)\"").find(line)?.groupValues?.get(1) ?: ""
+            val catchupSource =
+                Regex("catchup-source=\"(.+?)\"").find(line)?.groupValues?.get(1) ?: ""
+            val catchupDays =
+                Regex("catchup-days=\"(.+?)\"").find(line)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
             iptvList.add(
                 IptvResponseItem(
                     name = name.trim(),
                     channelName = channelName.trim(),
                     groupName = groupName.trim(),
                     url = lines[index + 1].trim(),
+                    catchupMode = catchupMode.trim(),
+                    catchupSource = catchupSource.trim(),
+                    catchupDays = catchupDays,
                 )
             )
         }
@@ -36,10 +47,17 @@ class M3uIptvParser : IptvParser {
             IptvGroup(
                 name = groupEntry.key,
                 iptvList = IptvList(groupEntry.value.groupBy { it.name }.map { nameEntry ->
+                    val first = nameEntry.value.first()
                     Iptv(
                         name = nameEntry.key,
-                        channelName = nameEntry.value.first().channelName,
+                        channelName = first.channelName,
                         urlList = nameEntry.value.map { it.url },
+                        catchupMode = nameEntry.value.firstOrNull { it.catchupSource.isNotBlank() }?.catchupMode
+                            ?: first.catchupMode,
+                        catchupSource = nameEntry.value.firstOrNull { it.catchupSource.isNotBlank() }?.catchupSource
+                            ?: first.catchupSource,
+                        catchupDays = nameEntry.value.firstOrNull { it.catchupDays > 0 }?.catchupDays
+                            ?: first.catchupDays,
                     )
                 })
             )
@@ -51,5 +69,8 @@ class M3uIptvParser : IptvParser {
         val channelName: String,
         val groupName: String,
         val url: String,
+        val catchupMode: String = "",
+        val catchupSource: String = "",
+        val catchupDays: Int = 0,
     )
 }

@@ -29,6 +29,16 @@ data class EpgProgramme(
         fun EpgProgramme.isLive() = System.currentTimeMillis() in startAt..<endAt
 
         /**
+         * 是否已播完（可回看）
+         */
+        fun EpgProgramme.isPast() = System.currentTimeMillis() >= endAt
+
+        /**
+         * 是否未播出（可预约）
+         */
+        fun EpgProgramme.isFuture() = System.currentTimeMillis() < startAt
+
+        /**
          * 节目进度
          */
         fun EpgProgramme.progress() =

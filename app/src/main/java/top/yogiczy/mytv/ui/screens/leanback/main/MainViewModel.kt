@@ -19,6 +19,7 @@ import top.yogiczy.mytv.data.entities.IptvGroupList.Companion.iptvList
 import top.yogiczy.mytv.data.repositories.epg.EpgRepository
 import top.yogiczy.mytv.data.repositories.iptv.IptvRepository
 import top.yogiczy.mytv.data.utils.Constants
+import top.yogiczy.mytv.ui.screens.leanback.toast.LeanbackToastState
 import top.yogiczy.mytv.ui.utils.SP
 
 class LeanbackMainViewModel : ViewModel() {
@@ -32,6 +33,30 @@ class LeanbackMainViewModel : ViewModel() {
         viewModelScope.launch {
             refreshIptv()
             refreshEpg()
+        }
+        viewModelScope.launch {
+            remindLoop()
+        }
+    }
+
+    /**
+     * 预约提醒循环：每 30 秒检查一次，节目开始前后 60 秒内浮层提醒一次并移除。
+     * 适老口语：到点弹「您预约的《xxx》开始了」
+     */
+    private suspend fun remindLoop() {
+        while (true) {
+            delay(30_000)
+            val now = System.currentTimeMillis()
+            val due = SP.epgRemindList.filter { item ->
+                val startAt = item.split("|").getOrNull(1)?.toLongOrNull() ?: 0L
+                startAt in now - 60_000..now + 60_000
+            }
+            if (due.isEmpty()) continue
+            due.forEach { item ->
+                val title = item.split("|").getOrNull(2) ?: "节目"
+                LeanbackToastState.I.showToast("您预约的《${title}》开始了")
+            }
+            SP.epgRemindList = SP.epgRemindList - due.toSet()
         }
     }
 

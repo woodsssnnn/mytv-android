@@ -42,7 +42,9 @@ import androidx.tv.material3.ListItemDefaults
 import kotlinx.coroutines.flow.distinctUntilChanged
 import top.yogiczy.mytv.data.entities.Epg
 import top.yogiczy.mytv.data.entities.EpgProgramme
+import top.yogiczy.mytv.data.entities.EpgProgramme.Companion.isFuture
 import top.yogiczy.mytv.data.entities.EpgProgramme.Companion.isLive
+import top.yogiczy.mytv.data.entities.EpgProgramme.Companion.isPast
 import top.yogiczy.mytv.data.entities.EpgProgrammeList
 import top.yogiczy.mytv.ui.theme.LeanbackTheme
 import top.yogiczy.mytv.ui.utils.handleLeanbackKeyEvents
@@ -57,6 +59,8 @@ fun LeanbackClassicPanelEpgList(
     epgProvider: () -> Epg? = { Epg() },
     exitFocusRequesterProvider: () -> FocusRequester = { FocusRequester.Default },
     onUserAction: () -> Unit = {},
+    onCatchupPlay: (EpgProgramme) -> Unit = {},
+    onRemind: (EpgProgramme) -> Unit = {},
 ) {
     val dateFormat = SimpleDateFormat("E MM-dd", Locale.getDefault())
     val epg = epgProvider()
@@ -107,6 +111,8 @@ fun LeanbackClassicPanelEpgList(
                 items(programmes) { programme ->
                     LeanbackClassicPanelEpgItem(
                         epgProgrammeProvider = { programme },
+                        onCatchupPlay = onCatchupPlay,
+                        onRemind = onRemind,
                     )
                 }
             }
@@ -139,8 +145,9 @@ fun LeanbackClassicPanelEpgList(
 private fun LeanbackClassicPanelEpgItem(
     modifier: Modifier = Modifier,
     epgProgrammeProvider: () -> EpgProgramme = { EpgProgramme() },
-) {
-    val programme = epgProgrammeProvider()
+    onCatchupPlay: (EpgProgramme) -> Unit = {},
+    onRemind: (EpgProgramme) -> Unit = {},
+) {    val programme = epgProgrammeProvider()
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     val focusRequester = remember { FocusRequester() }
@@ -159,6 +166,11 @@ private fun LeanbackClassicPanelEpgItem(
                 .handleLeanbackKeyEvents(
                     onSelect = {
                         focusRequester.requestFocus()
+                        when {
+                            programme.isLive() -> {}
+                            programme.isPast() -> onCatchupPlay(programme)
+                            programme.isFuture() -> onRemind(programme)
+                        }
                     },
                 ),
             colors = ListItemDefaults.colors(
@@ -187,6 +199,13 @@ private fun LeanbackClassicPanelEpgItem(
             trailingContent = {
                 if (programme.isLive()) {
                     Icon(Icons.Default.PlayArrow, contentDescription = "playing")
+                } else {
+                    // 适老：每个条目直接告诉老人按OK会发生什么
+                    Text(
+                        text = if (programme.isPast()) "回看" else "预约",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.alpha(if (isFocused) 1f else 0.45f),
+                    )
                 }
             },
         )

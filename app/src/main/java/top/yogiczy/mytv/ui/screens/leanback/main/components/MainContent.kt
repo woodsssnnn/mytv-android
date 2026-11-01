@@ -292,7 +292,13 @@ fun LeanbackMainContent(
                         settingsViewModel.iptvChannelFavoriteListVisible = it
                     },
                     onClose = { mainContentState.isPanelVisible = false },
-                    iptvFavoriteEnableProvider = { settingsViewModel.iptvChannelFavoriteEnable }
+                    iptvFavoriteEnableProvider = { settingsViewModel.iptvChannelFavoriteEnable },
+                    onCatchupPlay = { iptv, programme ->
+                        mainContentState.playCatchup(iptv, programme)
+                    },
+                    onRemind = { iptv, programme ->
+                        mainContentState.remindProgramme(iptv, programme)
+                    },
                 )
             }
         }
